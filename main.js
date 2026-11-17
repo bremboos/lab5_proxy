@@ -1,3 +1,4 @@
+const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
 const { Command } = require('commander');
@@ -22,15 +23,48 @@ if (Number.isNaN(port) || port <= 0 || port > 65535) {
     process.exit(1);
 }
 
+function sendText(res, statusCode, message, extraHeaders = {}) {
+    res.writeHead(statusCode, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        ...extraHeaders,
+    });
+    res.end(message);
+}
+
+function extractStatusCode(rawUrl) {
+    const parsedUrl = new URL(rawUrl, `http://${host}:${port}`);
+    const match = /^\/(\d{3})$/.exec(parsedUrl.pathname);
+    return match ? match[1] : null;
+}
+
 async function startServer() {
     try {
         await fs.mkdir(cacheDir, { recursive: true });
-        console.log(`Теку кешу підготовлено: ${cacheDir}`);
-        console.log(`Параметри запуску: host=${host}, port=${port}`);
     } catch (err) {
         console.error(`Не вдалося створити теку кешу "${cacheDir}":`, err.message);
         process.exit(1);
     }
+
+    const server = http.createServer(async (req, res) => {
+        try {
+            const code = extractStatusCode(req.url);
+
+            if (!code) {
+                sendText(res, 404, 'Not Found: вкажіть коректний тризначний HTTP-код у шляху (наприклад, /200).');
+                return;
+            }
+
+            sendText(res, 200, `Сервер працює. Отримано валідний код: ${code}`);
+        } catch (err) {
+            console.error('Внутрішня помилка сервера:', err);
+            if (!res.headersSent) {
+                sendText(res, 500, 'Internal Server Error: сталася непередбачена помилка сервера.');
+            }
+        }
+    });
+
+    server.listen(port, host);
+    console.log(`Проксі-сервер запущено на http://${host}:${port} (кеш: ${cacheDir})`);
 }
 
 startServer();
