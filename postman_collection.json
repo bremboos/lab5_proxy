@@ -1,0 +1,259 @@
+{
+  "info": {
+    "_postman_id": "e830c01c-d39c-49f5-89f1-4316560757df",
+    "name": "Lab 5 - Caching Proxy",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "60262312",
+    "_collection_link": "https://go.postman.co/collection/60262312-e830c01c-d39c-49f5-89f1-4316560757df?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "1. GET 200 (Cache MISS)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is image/jpeg', () => pm.response.to.have.header('Content-Type', 'image/jpeg'));",
+              "pm.test('X-Cache is MISS', () => pm.response.to.have.header('X-Cache', 'MISS'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "2. GET 200 (Cache HIT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is image/jpeg', () => pm.response.to.have.header('Content-Type', 'image/jpeg'));",
+              "pm.test('X-Cache is HIT', () => pm.response.to.have.header('X-Cache', 'HIT'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "3. PUT 201 (Upload custom image)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 201', () => pm.response.to.have.status(201));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "image/jpeg"
+          }
+        ],
+        "body": {
+          "mode": "file",
+          "file": {
+            "src": "sample.jpg"
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/201",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "201"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "4. GET 201 after PUT (Cache HIT)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Content-Type is image/jpeg', () => pm.response.to.have.header('Content-Type', 'image/jpeg'));",
+              "pm.test('X-Cache is HIT', () => pm.response.to.have.header('X-Cache', 'HIT'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/201",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "201"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "5. DELETE 200 (Existing)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "6. DELETE 200 (Not found)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "7. GET 999 (Non-existent code)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 404', () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/999",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "999"
+          ]
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "8. POST 200 (Method Not Allowed)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status code is 405', () => pm.response.to.have.status(405));",
+              "pm.test('Allow header is present', () => pm.response.to.have.header('Allow'));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/200",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "200"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:3000"
+    }
+  ]
+}
