@@ -24,6 +24,14 @@ if (Number.isNaN(port) || port <= 0 || port > 65535) {
     process.exit(1);
 }
 
+async function readRequestBody(req) {
+    const chunks = [];
+    for await (const chunk of req) {
+        chunks.push(chunk);
+    }
+    return Buffer.concat(chunks);
+}
+
 function sendText(res, statusCode, message, extraHeaders = {}) {
     res.writeHead(statusCode, {
         'Content-Type': 'text/plain; charset=utf-8',
@@ -66,33 +74,50 @@ async function startServer() {
 
             const filePath = path.join(cacheDir, `${code}.jpg`);
 
-            if (req.method === 'GET') {
-                try {
-                    const cachedImage = await fs.readFile(filePath);
-                    sendImage(res, 200, cachedImage, 'HIT');
-                } catch (readErr) {
-                    if (readErr.code !== 'ENOENT') {
-                        throw readErr;
-                    }
-
+            switch (req.method) {
+                case 'GET': {
                     try {
-                        const response = await superagent
-                            .get(`https://http.cat/${code}`)
-                            .buffer(true);
+                        const cachedImage = await fs.readFile(filePath);
+                        sendImage(res, 200, cachedImage, 'HIT');
+                    } catch (readErr) {
+                        if (readErr.code !== 'ENOENT') {
+                            throw readErr;
+                        }
 
-                        const imageBuffer = response.body;
-                        await fs.writeFile(filePath, imageBuffer);
-                        sendImage(res, 200, imageBuffer, 'MISS');
-                    } catch (_fetchErr) {
-                        sendText(res, 404, `Not Found: картинку для коду ${code} не знайдено.`);
+                        try {
+                            const response = await superagent
+                                .get(`https://http.cat/${code}`)
+                                .buffer(true);
+
+                            const imageBuffer = response.body;
+                            await fs.writeFile(filePath, imageBuffer);
+                            sendImage(res, 200, imageBuffer, 'MISS');
+                        } catch (_fetchErr) {
+                            sendText(res, 404, `Not Found: картинку для коду ${code} не знайдено.`);
+                        }
                     }
+                    break;
                 }
-                return;
-            }
 
-            sendText(res, 405, `Method Not Allowed: метод ${req.method} не підтримується.`, {
-                Allow: 'GET, PUT, DELETE',
-            });
+                case 'PUT': {
+                    const bodyBuffer = await readRequestBody(req);
+                    if (bodyBuffer.length === 0) {
+                        sendText(res, 400, 'Bad Request: тіло PUT-запиту не може бути порожнім.');
+                        return;
+                    }
+
+                    await fs.writeFile(filePath, bodyBuffer);
+                    sendText(res, 201, `Created: картинку для коду ${code} збережено в кеш.`);
+                    break;
+                }
+
+                default: {
+                    sendText(res, 405, `Method Not Allowed: метод ${req.method} не підтримується.`, {
+                        Allow: 'GET, PUT, DELETE',
+                    });
+                    break;
+                }
+            }
         } catch (err) {
             console.error('Внутрішня помилка сервера:', err);
             if (!res.headersSent) {

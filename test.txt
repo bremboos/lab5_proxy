@@ -3,3 +3,7 @@ curl -i http://127.0.0.1:3000/200 --output cat200_miss.jpg
 curl -i http://127.0.0.1:3000/200 --output cat200_hit.jpg
 curl -i http://127.0.0.1:3000/999
 
+# Перевірка методу PUT
+curl -i -X PUT http://127.0.0.1:3000/201 -H "Content-Type: image/jpeg" --data-binary "@./cache/200.jpg"
+curl -s -D - http://127.0.0.1:3000/201 -o /dev/null
+
