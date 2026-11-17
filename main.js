@@ -2,6 +2,7 @@ const http = require('http');
 const fs = require('fs/promises');
 const path = require('path');
 const { Command } = require('commander');
+const superagent = require('superagent');
 
 const program = new Command();
 
@@ -31,6 +32,15 @@ function sendText(res, statusCode, message, extraHeaders = {}) {
     res.end(message);
 }
 
+function sendImage(res, statusCode, imageBuffer, cacheStatus) {
+    res.writeHead(statusCode, {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': imageBuffer.length,
+        'X-Cache': cacheStatus,
+    });
+    res.end(imageBuffer);
+}
+
 function extractStatusCode(rawUrl) {
     const parsedUrl = new URL(rawUrl, `http://${host}:${port}`);
     const match = /^\/(\d{3})$/.exec(parsedUrl.pathname);
@@ -54,7 +64,35 @@ async function startServer() {
                 return;
             }
 
-            sendText(res, 200, `Сервер працює. Отримано валідний код: ${code}`);
+            const filePath = path.join(cacheDir, `${code}.jpg`);
+
+            if (req.method === 'GET') {
+                try {
+                    const cachedImage = await fs.readFile(filePath);
+                    sendImage(res, 200, cachedImage, 'HIT');
+                } catch (readErr) {
+                    if (readErr.code !== 'ENOENT') {
+                        throw readErr;
+                    }
+
+                    try {
+                        const response = await superagent
+                            .get(`https://http.cat/${code}`)
+                            .buffer(true);
+
+                        const imageBuffer = response.body;
+                        await fs.writeFile(filePath, imageBuffer);
+                        sendImage(res, 200, imageBuffer, 'MISS');
+                    } catch (_fetchErr) {
+                        sendText(res, 404, `Not Found: картинку для коду ${code} не знайдено.`);
+                    }
+                }
+                return;
+            }
+
+            sendText(res, 405, `Method Not Allowed: метод ${req.method} не підтримується.`, {
+                Allow: 'GET, PUT, DELETE',
+            });
         } catch (err) {
             console.error('Внутрішня помилка сервера:', err);
             if (!res.headersSent) {

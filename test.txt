@@ -1,0 +1,5 @@
+# Перевірка методу GET
+curl -i http://127.0.0.1:3000/200 --output cat200_miss.jpg
+curl -i http://127.0.0.1:3000/200 --output cat200_hit.jpg
+curl -i http://127.0.0.1:3000/999
+
