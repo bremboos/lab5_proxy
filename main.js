@@ -111,6 +111,20 @@ async function startServer() {
                     break;
                 }
 
+                case 'DELETE': {
+                    try {
+                        await fs.unlink(filePath);
+                        sendText(res, 200, `OK: картинку для коду ${code} видалено з кешу.`);
+                    } catch (unlinkErr) {
+                        if (unlinkErr.code === 'ENOENT') {
+                            sendText(res, 404, `Not Found: картинка для коду ${code} відсутня в кеші.`);
+                        } else {
+                            throw unlinkErr;
+                        }
+                    }
+                    break;
+                }
+
                 default: {
                     sendText(res, 405, `Method Not Allowed: метод ${req.method} не підтримується.`, {
                         Allow: 'GET, PUT, DELETE',
